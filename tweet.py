@@ -3,6 +3,7 @@ from datetime import datetime
 
 
 class Tweet:
+    """ Class for Tweet datatype. """
 
     def __init__(self, user_id, timestamp: float, tweet: str):
         self.user_id = user_id

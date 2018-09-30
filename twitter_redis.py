@@ -9,9 +9,10 @@ TWEETS_PER_TIMELINE = 30
 
 
 class RedisTwitter(TwitterAPI):
+    """ Implementation of Twitter API. """
 
     def __init__(self):
-        # Initialize Redis server
+        """ Initialize Redis server. """
         self.r = redis.StrictRedis(
             host='localhost', port='6379', decode_responses=True)
         self.r.flushall()
@@ -22,16 +23,16 @@ class RedisTwitter(TwitterAPI):
         key_followers = 'followers:' + str(t.user_id)
         key_tweet = 'tweet:' + tweet_id
 
-        # add tweet_id to user
+        # add tweet_id to user key-value store
         self.r.sadd(key_user, tweet_id)
 
         # for each follower of the user
         for follower in self.r.smembers(key_followers):
-            # add tweet to follower's timeline
+            # add tweet to follower's sorted timeline
             key_timeline = 'timeline:' + follower
             self.r.zadd(key_timeline, t.timestamp, tweet_id)
 
-        # post tweet in tweets set
+        # add tweet in tweets key-value store
         self.r.hmset(key_tweet, {
             'user_id': t.user_id,
             'tweet_txt': t.tweet,
@@ -42,21 +43,23 @@ class RedisTwitter(TwitterAPI):
         key_followers = 'followers:' + str(user_id)
         key_followees = 'following:' + str(follower_id)
 
+        # add follower to followers key-value store
         self.r.sadd(key_followers, follower_id)
+        # add following to followees key-value store
         self.r.sadd(key_followees, user_id)
 
     def get_timeline(self, user_id: int) -> List[Tweet]:
         key_timeline = 'timeline:' + str(user_id)
         tweets = []
 
-        # fetch tweets from user timeline in by most recent order
+        # fetch tweets from user timeline key-value store
+        # in by most recent time order
         for tweet_id in self.r.zrevrange(key_timeline, 0, -1):
             tweets.append(self.fetch_tweet(tweet_id))
 
         return tweets
 
     def get_followers(self, user_id: int) -> List[int]:
-        # access the followers:user_id
         key_followers = 'followers:' + str(user_id)
         followers = []
 
@@ -66,7 +69,6 @@ class RedisTwitter(TwitterAPI):
         return followers
 
     def get_followees(self, user_id: int) -> List[int]:
-        # access the following:user_id
         key_following = 'following:' + str(user_id)
         followees = []
 
@@ -85,7 +87,7 @@ class RedisTwitter(TwitterAPI):
 
         return tweets
 
-    def fetch_tweet(self, tweet_id: int):  # okay
+    def fetch_tweet(self, tweet_id: int):
         tweet_set = self.r.hgetall('tweet:' + str(tweet_id))
         user_id = tweet_set.get('user_id')
         timestamp = tweet_set.get('timestamp')

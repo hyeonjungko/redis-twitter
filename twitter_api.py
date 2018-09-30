@@ -54,4 +54,12 @@ class TwitterAPI(ABC):
         pass
 
     def get_tweets(self, user_id: int) -> List[Tweet]:
+        """ Get a list of Tweets for a given user.
+
+        Args:
+            user_id (int): user id of the user to fetch the Tweets for
+
+        Returns:
+            list of Tweets posted by the given user
+        """
         pass
